@@ -10,4 +10,4 @@ Current logic:
   - Save and quit by pressing Q on your keyboard: old save file will be overwritten and new save will be downloaded to the same directory
 
 Chrome driver should be placed in the respective directory.
-Obtain Chrome drivers from [https://googlechromelabs.github.io/chrome-for-testing/](url)
+Obtain Chrome drivers from https://googlechromelabs.github.io/chrome-for-testing/
