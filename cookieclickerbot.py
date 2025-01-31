@@ -58,6 +58,10 @@ class CookieClickerBot:
             if self.save_file:
                 os.remove(os.path.join(self.current_dir, self.save_file))
 
+            # Close options menu
+            close_button = self.driver.find_element(By.CSS_SELECTOR, ".close.menuClose")
+            close_button.click()
+
             time.sleep(3)
 
         except Exception as e:
@@ -165,10 +169,19 @@ class CookieClickerBot:
         # Click cookies 
         n = 5
         playing = True
+
+        last_save_minute = time.time() // 60
+        
         while playing:  
 
             # Click cookie for n serconds
             start_time = time.time()
+
+            # Auto save every minute
+            if time.time() // 60 != last_save_minute:
+                last_save_minute = time.time() // 60
+                self.save_game()
+            
             while time.time() - start_time < n + self.max_product_id:
                 # Ctrl + Q to quit
                 if keyboard.is_pressed("ctrl + q"):
