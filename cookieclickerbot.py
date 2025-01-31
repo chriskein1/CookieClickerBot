@@ -12,7 +12,7 @@ class CookieClickerBot:
     def __init__(self):
         self.current_dir = os.path.dirname(os.path.abspath(__file__))
         self.chrome_options = self._set_options()
-        self.service = Service(executable_path='./chromedriver.exe')
+        self.service = Service(executable_path='./chromedriver.exe', log_output=None)
         self.driver = webdriver.Chrome(service=self.service, options=self.chrome_options)
         self.url = "https://cookieclicker.ee/"
 
@@ -26,6 +26,7 @@ class CookieClickerBot:
         }
         chrome_options.add_experimental_option("prefs", prefs)
         chrome_options.add_argument("--start-maximized")
+                
         return chrome_options       
 
 
@@ -75,7 +76,7 @@ class CookieClickerBot:
         try:
             with open(self.save_file, "r", encoding="utf-8-sig") as f:
                 save = f.read().strip()
-                print(save)
+                # print(save)
                 # Paste save
                 # Shortcut: Ctrl + O
                 self.driver.find_element(By.TAG_NAME, "body").send_keys(Keys.CONTROL + 'o')
@@ -96,12 +97,12 @@ class CookieClickerBot:
                 # Press Enter
                 text_box.send_keys(Keys.ENTER)
 
-                time.sleep(5)
+                time.sleep(2)
 
         except:
             print("No save found!")
 
-    def _buy_products(self, n_cookies):
+    def _buy_products(self):
         # Find products
         try:
             products = self.driver.find_elements(By.CSS_SELECTOR, ".product.unlocked.enabled")
@@ -109,22 +110,16 @@ class CookieClickerBot:
                 # Scroll into view
                 self.driver.execute_script("arguments[0].scrollIntoView();", product)
 
-                # Find product price
-                print("Obtaining product price...")
-                product_price = product.find_element(By.CSS_SELECTOR, ".price").text
                 try:
-                    # Obtain product price
-                    product_price = int(product_price.replace(",", ""))
+                    # Buy product as long as it is enabled
+                    while product.get_attribute("class") == "product unlocked enabled":
+                        print("Buying product...")
+                        # Obtain product's id product0
+                        product_id = int(product.get_attribute("id").replace("product", ""))
+                        if product_id > self.max_product_id:
+                            self.max_product_id = product_id
 
-                    # Purchase product as many times as possible
-                    while n_cookies >= product_price:
-                        print("Product price: ", product_price)
-                        print("Cookies: ", n_cookies)
-                        # Purchase product
                         product.click()
-                        n_cookies -= product_price
-                        product_price = product.find_element(By.CSS_SELECTOR, ".price").text
-                        product_price = int(product_price.replace(",", ""))
                 except:
                     continue
 
@@ -165,6 +160,8 @@ class CookieClickerBot:
         self.cookies_id = "cookies"
         self.load_save()
 
+        self.max_product_id = 0
+
         # Click cookies 
         n = 5
         playing = True
@@ -172,8 +169,9 @@ class CookieClickerBot:
 
             # Click cookie for n serconds
             start_time = time.time()
-            while time.time() - start_time < n:
-                if keyboard.is_pressed('q'):
+            while time.time() - start_time < n + self.max_product_id:
+                # Ctrl + Q to quit
+                if keyboard.is_pressed("ctrl + q"):
                     playing = False
                     self.save_game()
                     break
@@ -182,11 +180,18 @@ class CookieClickerBot:
             if not playing:
                 break
 
-            n_cookies = self.driver.find_element(By.ID, self.cookies_id).text
-            n_cookies = int(n_cookies.replace(",", "").split(' ')[0])
+            # Click golden cookie if it appears
+            try:
+                golden_cookie = self.driver.find_element(By.CLASS_NAME, "shimmers")
+                # Scroll into view
+                self.driver.execute_script("arguments[0].scrollIntoView();", golden_cookie)
+                print("Clicking golden cookie...")
+                golden_cookie.click()
+            except:
+                pass
 
             # Buy products
-            self._buy_products(n_cookies)
+            self._buy_products()
             # Buy crates
             self._buy_crates()
 
